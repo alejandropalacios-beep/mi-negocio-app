@@ -107,28 +107,30 @@ function Clientes({ onClientAdded, onCancel }) {
 
     if (isSubmitting) return; // Previene doble clic
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      setIsSubmitting(false); // Ensure reset even if validation fails
+      return;
+    }
 
     setIsSubmitting(true);
     setStatus('⏳ Guardando cliente...');
 
-    const newCode = await getNextClientCode();
-    if (!newCode) {
-      setIsSubmitting(false);
-      return;
-    }
-
-    const cliente = {
-      ...formData,
-      codigoCliente: newCode,
-      nombreCompleto: formData.nombreCompleto.trim(),
-      instagram: formData.instagram.trim(),
-      correoElectronico: formData.correoElectronico.trim(),
-      descuento: parseInt(formData.descuento, 10) || 0,
-      totalCompras: 0,
-    };
-
     try {
+      const newCode = await getNextClientCode();
+      if (!newCode) {
+        return; // Will be caught by finally block
+      }
+
+      const cliente = {
+        ...formData,
+        codigoCliente: newCode,
+        nombreCompleto: formData.nombreCompleto.trim(),
+        instagram: formData.instagram.trim(),
+        correoElectronico: formData.correoElectronico.trim(),
+        descuento: parseInt(formData.descuento, 10) || 0,
+        totalCompras: 0,
+      };
+
       await addDoc(collection(db, 'clientes'), cliente);
       setStatus('✅ Cliente registrado con éxito.');
       setFormData({

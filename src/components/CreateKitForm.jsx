@@ -75,12 +75,24 @@ function CreateKitForm({ onKitComplete, onCancel }) {
   );
 
   const handleAddComponent = (product) => {
+    // Validate product is not null
+    if (!product) {
+      setStatus('Error: Producto no válido.');
+      return;
+    }
+    
     if (selectedComponents.some(comp => comp.id === product.id)) {
       setStatus('Este producto ya fue agregado al kit.');
       return;
     }
     
-    const unitCost = product.cantidad > 0 ? (product.costoCompra / product.cantidad) : 0;
+    // Validate cantidad > 0 before division to prevent division by zero
+    if (!product.cantidad || product.cantidad <= 0) {
+      setStatus('Error: El producto seleccionado no tiene stock disponible.');
+      return;
+    }
+    
+    const unitCost = product.costoCompra / product.cantidad;
     
     setSelectedComponents(prev => [
       ...prev,

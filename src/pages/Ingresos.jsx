@@ -42,26 +42,38 @@ function Ingresos() {
   const nombreUsuario = localStorage.getItem('usuarioNombre') || 'Desconocido';
   const rolUsuario = localStorage.getItem('usuarioRol') || 'Sin rol';
 
-  // Cargar ingresos desde Firestore
-  useEffect(() => {
-    const q = query(ingresosCollectionRef, orderBy('fechaHora', 'desc')); 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const ingresosList = snapshot.docs.map((doc) => ({
-          ...doc.data(),
-          id: doc.id,
-        }));
-        setIngresosRegistrados(ingresosList);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error al obtener los ingresos:', error);
-        setLoading(false);
-      }
-    );
-    return () => unsubscribe();
-  }, []);
+  // Cargar ingresos desde Firestore
+  useEffect(() => {
+    const q = query(ingresosCollectionRef, orderBy('fechaHora', 'desc')); 
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const ingresosList = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            concepto: data.concepto || 'Sin concepto',
+            monto: data.monto || 0,
+            categoria: data.categoria || 'Sin categoría',
+            fechaHora: data.fechaHora || null,
+            fecha: data.fecha || new Date().toISOString().slice(0, 10),
+            metodoPago: data.metodoPago || 'Desconocido',
+            usuario: data.usuario || 'Desconocido',
+            clienteId: data.clienteId || null,
+            clienteNombre: data.clienteNombre || 'Anónimo',
+            descripcion: data.descripcion || '',
+          };
+        });
+        setIngresosRegistrados(ingresosList);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error al obtener los ingresos:', error);
+        setLoading(false);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   // Categorías y canchas
   const [canchas] = useState([
@@ -133,11 +145,7 @@ function Ingresos() {
       ? `${selectedCategoria.nombre} - ${selectedCancha?.nombre || 'General'}`
       : selectedCategoria.nombre;
     
-    // === CÓDIGO CORREGIDO AQUI ===
-    // El modal está enviando el método como 'method', no como 'paymentMethod'.
-    // Usamos el operador OR (||) para tomar 'method' si 'paymentMethod' no está presente.
-    const metodoPagoFinal = paymentData.paymentMethod || paymentData.method || 'Desconocido'; 
-    // =============================
+    const metodoPagoFinal = paymentData.method || 'Desconocido';
 
     const nuevoIngreso = {
       concepto,

@@ -1,6 +1,6 @@
 // import necessary libraries and components
 import React, { useEffect } from 'react';
-import { db } from '../firebase'; // Assume db is your configured Firestore
+import { db } from '../firebaseConfig'; // Assume db is your configured Firestore
 import { onSnapshot, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {

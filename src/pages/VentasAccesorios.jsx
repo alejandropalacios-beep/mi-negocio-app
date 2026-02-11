@@ -14,7 +14,7 @@ const canchasData = [
   { id: 4, nombre: 'Cancha 4' },
 ];
 
-const nombreUsuario = "Jassler";
+const nombreUsuario = localStorage.getItem('usuarioNombre') || 'Desconocido';
 const ventasCollectionRef = collection(db, 'ventas');
 const productosCollectionRef = collection(db, 'inventario'); // ✅ Usar 'inventario'
 const reportesTotalesCollectionRef = collection(db, 'reportesTotales'); 
