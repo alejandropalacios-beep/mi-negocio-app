@@ -118,7 +118,8 @@ function Clientes({ onClientAdded, onCancel }) {
     try {
       const newCode = await getNextClientCode();
       if (!newCode) {
-        return; // Will be caught by finally block
+        setIsSubmitting(false);
+        return;
       }
 
       const cliente = {
