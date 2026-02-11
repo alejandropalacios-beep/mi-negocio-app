@@ -1,70 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import { db } from '../firebase';
-import { collection, onSnapshot, addDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+// import necessary libraries and components
+import React, { useEffect } from 'react';
+import { db } from '../firebase'; // Assume db is your configured Firestore
+import { onSnapshot, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
-const Comandas = () => {
-  const [canchas, setCanchas] = useState([]);
-  const [openOrders, setOpenOrders] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [payments, setPayments] = useState([]);
+const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
-  useEffect(() => {
-    const canchasCollection = collection(db, 'canchas');
-    const openOrdersCollection = collection(db, 'openOrders');
-    const clientsCollection = collection(db, 'clients');
-    const productsCollection = collection(db, 'products');
-    const paymentsCollection = collection(db, 'payments');
+    useEffect(() => {
+        // Subscribe to changes in canchas collection
+        const unsubscribeCanchas = onSnapshot(db.collection('canchas'), (snapshot) => {
+            const newCanchas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setCanchas(newCanchas);
+        });
 
-    const unsubscribeCanchas = onSnapshot(canchasCollection, (snapshot) => {
-      setCanchas(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
-    });
+        // Subscribe to changes in comandas_abiertas collection
+        const unsubscribeOpenOrders = onSnapshot(db.collection('comandas_abiertas'), (snapshot) => {
+            const newOpenOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setOpenOrders(newOpenOrders);
+        });
 
-    const unsubscribeOpenOrders = onSnapshot(openOrdersCollection, (snapshot) => {
-      setOpenOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
-    });
+        // Cleanup on unmount
+        return () => {
+            unsubscribeCanchas();
+            unsubscribeOpenOrders();
+        };
+    }, [setCanchas, setOpenOrders]);
 
-    const unsubscribeClients = onSnapshot(clientsCollection, (snapshot) => {
-      setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
-    });
-
-    const unsubscribeProducts = onSnapshot(productsCollection, (snapshot) => {
-      setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
-    });
-
-    const unsubscribePayments = onSnapshot(paymentsCollection, (snapshot) => {
-      setPayments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
-    });
-
-    // Clean up subscription on unmount.
-    return () => {
-      unsubscribeCanchas();
-      unsubscribeOpenOrders();
-      unsubscribeClients();
-      unsubscribeProducts();
-      unsubscribePayments();
+    const handleUpdateOrder = async (orderId, updatedData) => {
+        const orderRef = doc(db, 'comandas_abiertas', orderId);
+        await updateDoc(orderRef, updatedData);
     };
-  }, []);
 
-  const handleAddProduct = async (newProduct) => {
-    await addDoc(collection(db, 'products'), newProduct);
-  };
+    const handleDeleteOrder = async (orderId) => {
+        const orderRef = doc(db, 'comandas_abiertas', orderId);
+        await deleteDoc(orderRef);
+    };
 
-  const handleUpdateProduct = async (id, updatedData) => {
-    const productRef = doc(db, 'products', id);
-    await updateDoc(productRef, updatedData);
-  };
-
-  const handleDeleteProduct = async (id) => {
-    await deleteDoc(doc(db, 'products', id));
-  };
-
-  return (
-    <div>
-      <h1>Comandas</h1>
-      {/* UI for canchas, openOrders, clients, products, payments goes here */}
-    </div>
-  );
+    return (
+        <div>
+            {/* Your component's original render logic goes here */}
+            <h1>Comandas</h1>
+            {/* Render canchas and open orders, along with handlers for updates and deletes */}
+        </div>
+    );
 };
 
 export default Comandas;
