@@ -285,56 +285,76 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
           }
         });
       }
+          <div className="section-comandas-abiertas">
+            <h3 className="section-title">Comandas Guardadas / Abiertas</h3>
 
-      // Eliminar comanda pagada
-      if (isCanchaSelected) {
-        setCanchas(prev =>
-          prev.map(c =>
-            c.id === selectedComandaId
-              ? { ...c, productosEnComanda: [], clienteSeleccionado: null }
-              : c
-          )
-        );
-      } else {
-        setOpenOrders(prev => prev.filter(o => o.id !== selectedComandaId));
-      }
+            <button
+              onClick={handleCreateOpenOrder}
+              className="create-open-order-btn"
+            >
+              + Abrir Comanda
+            </button>
 
-      setSelectedComandaId(null);
-      setIsPaymentModalOpen(false);
+            <div className="open-orders-list-cards">
+              {openOrders && openOrders.length > 0 ? (
+                openOrders.map(o => (
+                  <div key={o.id} className="pending-order-card">
 
-    } catch (err) {
-      console.error('Error procesando pago:', err);
-      alert('Error al procesar el pago.');
-    } finally {
-      setIsSubmittingPayment(false);
-    }
-  };
+                    <button
+                      onClick={() => handleDeleteOpenOrder(o.id)}
+                      className="delete-open-order-btn-card"
+                      title="Eliminar Comanda Guardada"
+                    >
+                      🗑️
+                    </button>
 
-  // 💾 GUARDAR COMANDA PENDIENTE
-  const handleSaveComandaPendiente = () => {
-    if (!selectedItem) return;
+                    <span className="pending-cancha-name">{o.nombre}</span>
 
-    if (!isCanchaSelected) {
-      alert("Solo las canchas pueden guardarse como pendiente.");
-      return;
-    }
+                    <p className="pending-client">
+                      Cliente: {o.clienteSeleccionado?.nombreCompleto || 'Anónimo'}
+                    </p>
 
-    if (!selectedItem.productosEnComanda.length) {
-      alert("No hay productos para guardar.");
-      return;
-    }
+                    <ul className="pending-products-list">
+                      {o.productosEnComanda && o.productosEnComanda.map(p => (
+                        <li key={p.id}>
+                          {p.nombre} x {p.cantidad}
+                        </li>
+                      ))}
+                    </ul>
 
-    const nuevaComandaAbierta = {
-      id:
-        openOrders.length > 0
-          ? Math.max(...openOrders.map(o => o.id)) + 1
-          : 1,
-      nombre: selectedItem.nombre,
-      productosEnComanda: [...selectedItem.productosEnComanda],
-      clienteSeleccionado: selectedItem.clienteSeleccionado || null,
-      tipo: "abierta",
-    };
+                    <div className="pending-total-area">
+                      <p className="pending-total">
+                        Total: Bs.{' '}
+                        {o.productosEnComanda
+                          .reduce((sum, prod) => sum + prod.precio * (prod.cantidad || 0), 0)
+                          .toFixed(2)}
+                      </p>
+                    </div>
 
+                    <div className="pending-actions">
+                      <button
+                        onClick={() => handleSelectComanda(o.id, false)}
+                        className="edit-btn"
+                      >
+                        EDITAR
+                      </button>
+
+                      <button
+                        onClick={() => openPaymentModal(o.id, false)}
+                        className="pay-btn-small"
+                      >
+                        PAGAR
+                      </button>
+                    </div>
+
+                  </div>
+                ))
+              ) : (
+                <p className="no-open-orders-msg">No hay comandas guardadas</p>
+              )}
+            </div>
+          </div>
+     
     setOpenOrders(prev => [...prev, nuevaComandaAbierta]);
 
     // Limpia la cancha original
