@@ -29,19 +29,59 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
         const orderRef = doc(db, 'comandas_abiertas', orderId);
         await updateDoc(orderRef, updatedData);
     };
+  }, []);
 
-    const handleDeleteOrder = async (orderId) => {
-        const orderRef = doc(db, 'comandas_abiertas', orderId);
-        await deleteDoc(orderRef);
+  const addProduct = (product) => {
+    setSelectedProducts((prev) => [...prev, product]);
+  };
+
+  const processPayment = async () => {
+    if (!selectedClient || selectedProducts.length === 0) return;
+
+    const newOrder = {
+      client: selectedClient,
+      products: selectedProducts,
+      date: new Date().toISOString(),
     };
 
-    return (
-        <div>
-            {/* Your component's original render logic goes here */}
-            <h1>Comandas</h1>
-            {/* Render canchas and open orders, along with handlers for updates and deletes */}
-        </div>
-    );
+    try {
+      await addDoc(collection(db, 'openOrders'), newOrder);
+      resetOrder();
+    } catch (error) {
+      console.error("Error processing payment: ", error);
+    }
+  };
+
+  const resetOrder = () => {
+    setSelectedClient('');
+    setSelectedProducts([]);
+  };
+
+  return (
+    <div>
+      <h1>Comandas</h1>
+      <select onChange={(e) => setSelectedClient(e.target.value)} value={selectedClient}>
+        <option value="">Select Client</option>
+        {/* Add options dynamically based on your client data */}
+      </select>
+      <div>
+        <h2>Products</h2>
+        {canchas.map(product => (
+          <div key={product.id}>
+            <span>{product.name}</span>
+            <button onClick={() => addProduct(product)}>Add</button>
+          </div>
+        ))}
+      </div>
+      <div>
+        <h2>Selected Products</h2>
+        {selectedProducts.map((product, index) => (
+          <div key={index}>{product.name}</div>
+        ))}
+      </div>
+      <button onClick={processPayment}>Process Payment</button>
+    </div>
+  );
 };
 
 export default Comandas;
