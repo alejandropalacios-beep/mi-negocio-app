@@ -112,6 +112,7 @@ function InventoryManagement() {
               <th>Cantidad</th>
               <th>Sección</th>
               <th>Categoría</th>
+              <th>Costo de Compra (Bs)</th>
               <th>Costo de Venta (Bs)</th>
               <th>Tipo</th>
               <th>Acciones</th>
@@ -125,6 +126,7 @@ function InventoryManagement() {
                 <td>{(product.cantidad ?? 0) + ' ' + (product.unidad ?? '')}</td>
                 <td>{product.seccion ?? 'N/A'}</td>
                 <td>{product.categoria ?? 'N/A'}</td>
+                <td>{typeof product.costoCompra === 'number' ? product.costoCompra.toFixed(2) : 'N/A'}</td>
                 <td>{typeof product.costoVenta === 'number' ? product.costoVenta.toFixed(2) : 'N/A'}</td>
                 <td>{product.esInsumo ? 'Insumo' : product.esKit ? 'Kit' : 'Producto'}</td>
                 <td>
