@@ -251,7 +251,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
         nombre: p.nombre,
         cantidad: p.cantidad,
         precio: p.precio,
-        costoCompra: prod.costoCompra || 0,
+        costoCompra: p.costoCompra || 0,
       })),
       clienteId: selectedItem.clienteSeleccionado
         ? selectedItem.clienteSeleccionado.id
