@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import './Comandas.css';
 
-const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
+const Comandas = ({ canchas = [], setCanchas = () => {}, openOrders = [], setOpenOrders = () => {} }) => {
   const [selectedComandaId, setSelectedComandaId] = useState(null);
   const [isCanchaSelected, setIsCanchaSelected] = useState(null);
 
@@ -23,6 +23,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
   const [products, setProducts] = useState([]);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const productsCollectionRef = collection(db, 'inventario');
   const comandasPagadasCollectionRef = collection(db, 'comandas_pagadas');
@@ -31,6 +32,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        setLoading(true);
         const snapshot = await getDocs(productsCollectionRef);
         const allProducts = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -39,6 +41,9 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
         setProducts(allProducts);
       } catch (error) {
         console.error('Error al obtener productos:', error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchProducts();
@@ -350,6 +355,15 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
     alert("✅ Comanda guardada como pendiente.");
   };
 
+  if (loading) {
+    return (
+      <div className="comandas-container">
+        <h2 className="main-title">Sistema de Comandas</h2>
+        <p>Cargando...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="comandas-container">
       <h2 className="main-title">Sistema de Comandas</h2>
@@ -361,17 +375,21 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
           <div className="section-canchas">
             <h3 className="section-title">Comandas por Cancha</h3>
             <div className="button-list">
-              {canchas.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => handleSelectComanda(c.id, true)}
-                  className={`comanda-btn ${
-                    isCanchaSelected && selectedComandaId === c.id ? 'active' : ''
-                  }`}
-                >
-                  {c.nombre}
-                </button>
-              ))}
+              {canchas && canchas.length > 0 ? (
+                canchas.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleSelectComanda(c.id, true)}
+                    className={`comanda-btn ${
+                      isCanchaSelected && selectedComandaId === c.id ? 'active' : ''
+                    }`}
+                  >
+                    {c.nombre}
+                  </button>
+                ))
+              ) : (
+                <p>No hay canchas</p>
+              )}
 
               <button onClick={handleAddCancha} className="add-btn-cancha">
                 + Cancha
@@ -392,7 +410,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
             </button>
 
             <div className="open-orders-list-cards">
-              {openOrders.length > 0 ? (
+              {openOrders && openOrders.length > 0 ? (
                 openOrders.map(o => (
                   <div key={o.id} className="pending-order-card">
 
@@ -411,7 +429,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
                     </p>
 
                     <ul className="pending-products-list">
-                      {o.productosEnComanda.map(p => (
+                      {o.productosEnComanda && o.productosEnComanda.map(p => (
                         <li key={p.id}>
                           {p.nombre} x {p.cantidad}
                         </li>
@@ -482,7 +500,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
                 <h4 className="products-list-title">Productos en la comanda</h4>
 
-                {selectedItem.productosEnComanda.length > 0 ? (
+                {selectedItem.productosEnComanda && selectedItem.productosEnComanda.length > 0 ? (
                   <ul className="products-list">
                     {selectedItem.productosEnComanda.map(prod => (
                       <li key={prod.id} className="product-item">
@@ -525,7 +543,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
                   </p>
                 </div>
 
-                {selectedItem.productosEnComanda.length > 0 && (
+                {selectedItem.productosEnComanda && selectedItem.productosEnComanda.length > 0 && (
                   <>
                     {/* GUARDAR PENDIENTE SOLO PARA CANCHA */}
                     {isCanchaSelected && (
