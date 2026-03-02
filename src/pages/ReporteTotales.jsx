@@ -371,10 +371,16 @@ const nombreUsuario = localStorage.getItem('nombreUsuario') || '';
     //Nuevo 
 
     const exportToPdfSimple = async () => {
-  if (!nombreUsuario || nombreUsuario.trim().length < 2) {
-    alert('No se encontró el usuario (nombreUsuario). Inicia sesión nuevamente.');
-    return;
-  }
+  let user = (localStorage.getItem('nombreUsuario') || '').trim();
+
+if (user.length < 2) {
+  user = (window.prompt('Ingresa tu nombre para el cierre:') || '').trim();
+}
+
+if (user.length < 2) {
+  alert('Debes ingresar un nombre para generar el cierre.');
+  return;
+}
 
   const range = getExportRange(exportMode);
   if (!range) {
@@ -405,7 +411,7 @@ const nombreUsuario = localStorage.getItem('nombreUsuario') || '';
 
   const msg1 =
     `Exportar PDF (imprimir/guardar como PDF)\n\n` +
-    `Usuario cierre: ${nombreUsuario}\n` +
+    `Usuario cierre: ${user}\n` +
     `Modo: ${label}\n` +
     `Desde: ${format(start, 'dd/MM/yy HH:mm:ss')}\n` +
     `Hasta: ${format(end, 'dd/MM/yy HH:mm:ss')}\n` +
@@ -423,7 +429,7 @@ const nombreUsuario = localStorage.getItem('nombreUsuario') || '';
 
   setPrintData({
     start, end, label, note,
-    usuario: nombreUsuario,
+    usuario: user,
     txs,
     totals: totalsForPrint
   });
