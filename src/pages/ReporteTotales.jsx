@@ -261,6 +261,17 @@ function ReporteTotales() {
         }
     }, []);
 
+    const parseLocalDateInput = (yyyyMmDd, endOfDay = false) => {
+  if (!yyyyMmDd) return null;
+  const [y, m, d] = yyyyMmDd.split('-').map(Number);
+  if (!y || !m || !d) return null;
+
+  // new Date(y, m-1, d, ...) crea la fecha en zona horaria LOCAL (Bolivia)
+  return endOfDay
+    ? new Date(y, m - 1, d, 23, 59, 59, 999)
+    : new Date(y, m - 1, d, 0, 0, 0, 0);
+};
+
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
     useEffect(() => {
@@ -273,18 +284,17 @@ function ReporteTotales() {
 
         if (filterPaymentMethod !== PAYMENT_METHODS[0]) data = data.filter(t => t.metodoPago === filterPaymentMethod);
 
-        const start = startDate ? new Date(startDate) : null;
-        const end = endDate ? new Date(endDate) : null;
-        if (start || end) {
-            if (start) start.setHours(0, 0, 0, 0);
-            if (end) end.setHours(23, 59, 59, 999);
-            data = data.filter(t => {
-                const d = extractDate(t);
-                if (start && d.getTime() < start.getTime()) return false;
-                if (end && d.getTime() > end.getTime()) return false;
-                return true;
-            });
-        }
+        const start = parseLocalDateInput(startDate, false);
+        const end = parseLocalDateInput(endDate, true);
+
+            if (start || end) {
+          data = data.filter(t => {
+        const d = extractDate(t);
+            if (start && d < start) return false;
+            if (end && d > end) return false;
+        return true;
+  });
+}
         setFilteredTransactions(data);
     }, [filterType, filterPaymentMethod, startDate, endDate, allTransactions]);
 
