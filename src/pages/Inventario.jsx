@@ -12,3 +12,17 @@ function Inventario() {
 }
 
 export default Inventario; // <-- This is the key line
+
+// En tu componente de Inventario
+import InventoryBarcodeEditor from '../components/InventoryBarcodeEditor';
+
+export default function Inventario() {
+  return (
+    <div>
+      {/* Tu código existente */}
+      
+      {/* Agregar el editor de códigos */}
+      <InventoryBarcodeEditor />
+    </div>
+  );
+}
