@@ -1,0 +1,204 @@
+/* src/components/BarcodeSearchModal.css */
+
+.barcode-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.barcode-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.barcode-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.barcode-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+}
+
+.modal-close-btn:hover {
+  color: #333;
+}
+
+.barcode-modal-content {
+  padding: 20px;
+}
+
+.manual-input-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.barcode-input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.barcode-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.search-btn {
+  padding: 12px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.search-btn:hover {
+  background: #5568d3;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 30px;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.search-error {
+  background: #ff6b6b;
+  color: white;
+  padding: 15px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.product-found {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.product-card {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #4CAF50;
+}
+
+.product-card h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.product-details {
+  margin-bottom: 20px;
+}
+
+.product-details p {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.product-details strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.product-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.add-product-btn {
+  flex: 1;
+  padding: 12px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.add-product-btn:hover {
+  background: #45a049;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 12px;
+  background: #ddd;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.cancel-btn:hover {
+  background: #ccc;
+}
+
+.no-search {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.no-search p {
+  margin: 0;
+  font-size: 14px;
+}
