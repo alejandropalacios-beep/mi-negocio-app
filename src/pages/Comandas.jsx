@@ -1,7 +1,12 @@
+// src/pages/Comandas.jsx
+
 import React, { useState, useEffect, useMemo } from 'react';
 import ClientSelectionModal from '../assets/components/ClientSelectionModal';
 import ProductSelectionModal from '../assets/components/ProductSelectionModal';
 import PaymentModal from '../assets/components/PaymentModal';
+import BarcodeReaderStatus from '../components/BarcodeReaderStatus';
+import BarcodeSearchModal from '../components/BarcodeSearchModal';
+import { useUSBBarcodeReader } from '../hooks/useUSBBarcodeReader';
 import { db } from '../firebaseConfig';
 import {
   collection,
@@ -20,9 +25,19 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
 
   const [products, setProducts] = useState([]);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
+  // Hook del lector USB
+  const {
+    lastScannedCode,
+    error: scanError,
+    clearError: clearScanError,
+    resetLastCode,
+    isActive: isReaderActive,
+  } = useUSBBarcodeReader();
 
   const productsCollectionRef = collection(db, 'inventario');
   const comandasPagadasCollectionRef = collection(db, 'comandas_pagadas');
@@ -32,7 +47,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
     const fetchProducts = async () => {
       try {
         const snapshot = await getDocs(productsCollectionRef);
-        const allProducts = snapshot.docs.map(doc => ({
+        const allProducts = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
@@ -44,11 +59,18 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
     fetchProducts();
   }, []);
 
+  // Cuando se escanea un código, abrir el modal
+  useEffect(() => {
+    if (lastScannedCode) {
+      setIsBarcodeModalOpen(true);
+    }
+  }, [lastScannedCode]);
+
   const selectedItem = useMemo(() => {
     if (selectedComandaId == null) return null;
     return isCanchaSelected
-      ? canchas.find(c => c.id === selectedComandaId)
-      : openOrders.find(o => o.id === selectedComandaId);
+      ? canchas.find((c) => c.id === selectedComandaId)
+      : openOrders.find((o) => o.id === selectedComandaId);
   }, [selectedComandaId, isCanchaSelected, canchas, openOrders]);
 
   const totalAmount = useMemo(() => {
@@ -62,11 +84,12 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
   const handleSelectComanda = (id, isCancha) => {
     setSelectedComandaId(id);
     setIsCanchaSelected(isCancha);
+    clearScanError();
   };
 
   const handleAddCancha = () => {
     const newId =
-      canchas.length > 0 ? Math.max(...canchas.map(c => c.id)) + 1 : 1;
+      canchas.length > 0 ? Math.max(...canchas.map((c) => c.id)) + 1 : 1;
 
     const nueva = {
       id: newId,
@@ -76,13 +99,13 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
       tipo: 'cancha',
     };
 
-    setCanchas(prev => [...prev, nueva]);
+    setCanchas((prev) => [...prev, nueva]);
     handleSelectComanda(newId, true);
   };
 
   const handleCreateOpenOrder = () => {
     const newId =
-      openOrders.length > 0 ? Math.max(...openOrders.map(o => o.id)) + 1 : 1;
+      openOrders.length > 0 ? Math.max(...openOrders.map((o) => o.id)) + 1 : 1;
 
     const nueva = {
       id: newId,
@@ -92,13 +115,13 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
       tipo: 'abierta',
     };
 
-    setOpenOrders(prev => [...prev, nueva]);
+    setOpenOrders((prev) => [...prev, nueva]);
     handleSelectComanda(newId, false);
   };
 
-  const handleDeleteOpenOrder = comandaId => {
+  const handleDeleteOpenOrder = (comandaId) => {
     if (window.confirm('¿Eliminar comanda abierta?')) {
-      setOpenOrders(prev => prev.filter(o => o.id !== comandaId));
+      setOpenOrders((prev) => prev.filter((o) => o.id !== comandaId));
       if (selectedComandaId === comandaId && !isCanchaSelected) {
         setSelectedComandaId(null);
       }
@@ -109,12 +132,12 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
   const openClientModal = () => setIsClientModalOpen(true);
   const closeClientModal = () => setIsClientModalOpen(false);
 
-  const handleSelectClient = client => {
+  const handleSelectClient = (client) => {
     if (!selectedItem) return;
 
     const updateIn = (items, setter) => {
       setter(
-        items.map(item => {
+        items.map((item) => {
           if (item.id === selectedComandaId) {
             return { ...item, clienteSeleccionado: client };
           }
@@ -133,10 +156,10 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
   const openProductModal = () => setIsProductModalOpen(true);
   const closeProductModal = () => setIsProductModalOpen(false);
 
-  const handleSelectProduct = productToAdd => {
+  const handleSelectProduct = (productToAdd) => {
     if (!selectedItem) return;
 
-    const productData = products.find(p => p.id === productToAdd.id);
+    const productData = products.find((p) => p.id === productToAdd.id);
 
     const newProd = {
       ...productToAdd,
@@ -146,16 +169,16 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
     const updateIn = (items, setter) => {
       setter(
-        items.map(item => {
+        items.map((item) => {
           if (item.id === selectedComandaId) {
             const existing = item.productosEnComanda.find(
-              p => p.id === newProd.id
+              (p) => p.id === newProd.id
             );
 
             if (existing) {
               return {
                 ...item,
-                productosEnComanda: item.productosEnComanda.map(p =>
+                productosEnComanda: item.productosEnComanda.map((p) =>
                   p.id === newProd.id
                     ? { ...p, cantidad: p.cantidad + newProd.cantidad }
                     : p
@@ -184,10 +207,10 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
     const updateIn = (items, setter) => {
       setter(
-        items.map(item => {
+        items.map((item) => {
           if (item.id === selectedComandaId) {
             const updated = item.productosEnComanda
-              .map(prod => {
+              .map((prod) => {
                 if (prod.id === productId) {
                   const newQty = (prod.cantidad || 0) + delta;
                   if (newQty <= 0) return null;
@@ -212,8 +235,8 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
     const itemToPay =
       comandaId != null
         ? isCancha
-          ? canchas.find(c => c.id === comandaId)
-          : openOrders.find(o => o.id === comandaId)
+          ? canchas.find((c) => c.id === comandaId)
+          : openOrders.find((o) => o.id === comandaId)
         : selectedItem;
 
     if (!itemToPay || !itemToPay.productosEnComanda.length) {
@@ -233,7 +256,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
   };
 
   // PROCESAR PAGO FINAL
-  const handleProcessPayment = async paymentData => {
+  const handleProcessPayment = async (paymentData) => {
     if (!selectedItem) return;
 
     setIsSubmittingPayment(true);
@@ -246,7 +269,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
     const nuevaComanda = {
       tipoComanda: selectedItem.tipo,
       ubicacion: selectedItem.nombre,
-      productos: selectedItem.productosEnComanda.map(p => ({
+      productos: selectedItem.productosEnComanda.map((p) => ({
         id: p.id,
         nombre: p.nombre,
         cantidad: p.cantidad,
@@ -277,7 +300,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
           'clientes',
           selectedItem.clienteSeleccionado.id
         );
-        await runTransaction(db, async tx => {
+        await runTransaction(db, async (tx) => {
           const clientSnap = await tx.get(clientRef);
           if (clientSnap.exists()) {
             const curr = clientSnap.data().totalCompras || 0;
@@ -288,20 +311,19 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
       // Eliminar comanda pagada
       if (isCanchaSelected) {
-        setCanchas(prev =>
-          prev.map(c =>
+        setCanchas((prev) =>
+          prev.map((c) =>
             c.id === selectedComandaId
               ? { ...c, productosEnComanda: [], clienteSeleccionado: null }
               : c
           )
         );
       } else {
-        setOpenOrders(prev => prev.filter(o => o.id !== selectedComandaId));
+        setOpenOrders((prev) => prev.filter((o) => o.id !== selectedComandaId));
       }
 
       setSelectedComandaId(null);
       setIsPaymentModalOpen(false);
-
     } catch (err) {
       console.error('Error procesando pago:', err);
       alert('Error al procesar el pago.');
@@ -315,31 +337,31 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
     if (!selectedItem) return;
 
     if (!isCanchaSelected) {
-      alert("Solo las canchas pueden guardarse como pendiente.");
+      alert('Solo las canchas pueden guardarse como pendiente.');
       return;
     }
 
     if (!selectedItem.productosEnComanda.length) {
-      alert("No hay productos para guardar.");
+      alert('No hay productos para guardar.');
       return;
     }
 
     const nuevaComandaAbierta = {
       id:
         openOrders.length > 0
-          ? Math.max(...openOrders.map(o => o.id)) + 1
+          ? Math.max(...openOrders.map((o) => o.id)) + 1
           : 1,
       nombre: selectedItem.nombre,
       productosEnComanda: [...selectedItem.productosEnComanda],
       clienteSeleccionado: selectedItem.clienteSeleccionado || null,
-      tipo: "abierta",
+      tipo: 'abierta',
     };
 
-    setOpenOrders(prev => [...prev, nuevaComandaAbierta]);
+    setOpenOrders((prev) => [...prev, nuevaComandaAbierta]);
 
     // Limpia la cancha original
-    setCanchas(prev =>
-      prev.map(c =>
+    setCanchas((prev) =>
+      prev.map((c) =>
         c.id === selectedComandaId
           ? { ...c, productosEnComanda: [], clienteSeleccionado: null }
           : c
@@ -347,26 +369,50 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
     );
 
     setSelectedComandaId(null);
-    alert("✅ Comanda guardada como pendiente.");
+    alert('✅ Comanda guardada como pendiente.');
   };
 
   return (
     <div className="comandas-container">
+      {/* LECTOR USB STATUS */}
+      <BarcodeReaderStatus
+        isActive={isReaderActive}
+        lastScanned={lastScannedCode}
+        error={scanError}
+        onClearError={clearScanError}
+      />
+
+      {/* MODAL DE BÚSQUEDA POR CÓDIGO */}
+      <BarcodeSearchModal
+        isOpen={isBarcodeModalOpen}
+        onClose={() => {
+          setIsBarcodeModalOpen(false);
+          resetLastCode();
+        }}
+        onProductFound={(product) => {
+          handleSelectProduct(product);
+          resetLastCode();
+        }}
+        scannedCode={lastScannedCode}
+        products={products}
+      />
+
       <h2 className="main-title">Sistema de Comandas</h2>
 
       <div className="main-content-panels">
         {/* PANEL IZQUIERDO */}
         <div className="side-panel">
-
           <div className="section-canchas">
             <h3 className="section-title">Comandas por Cancha</h3>
             <div className="button-list">
-              {canchas.map(c => (
+              {canchas.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => handleSelectComanda(c.id, true)}
                   className={`comanda-btn ${
-                    isCanchaSelected && selectedComandaId === c.id ? 'active' : ''
+                    isCanchaSelected && selectedComandaId === c.id
+                      ? 'active'
+                      : ''
                   }`}
                 >
                   {c.nombre}
@@ -393,9 +439,8 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
             <div className="open-orders-list-cards">
               {openOrders.length > 0 ? (
-                openOrders.map(o => (
+                openOrders.map((o) => (
                   <div key={o.id} className="pending-order-card">
-
                     <button
                       onClick={() => handleDeleteOpenOrder(o.id)}
                       className="delete-open-order-btn-card"
@@ -407,11 +452,12 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
                     <span className="pending-cancha-name">{o.nombre}</span>
 
                     <p className="pending-client">
-                      Cliente: {o.clienteSeleccionado?.nombreCompleto || 'Anónimo'}
+                      Cliente:{' '}
+                      {o.clienteSeleccionado?.nombreCompleto || 'Anónimo'}
                     </p>
 
                     <ul className="pending-products-list">
-                      {o.productosEnComanda.map(p => (
+                      {o.productosEnComanda.map((p) => (
                         <li key={p.id}>
                           {p.nombre} x {p.cantidad}
                         </li>
@@ -422,7 +468,11 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
                       <p className="pending-total">
                         Total: Bs.{' '}
                         {o.productosEnComanda
-                          .reduce((sum, prod) => sum + prod.precio * (prod.cantidad || 0), 0)
+                          .reduce(
+                            (sum, prod) =>
+                              sum + prod.precio * (prod.cantidad || 0),
+                            0
+                          )
                           .toFixed(2)}
                       </p>
                     </div>
@@ -442,7 +492,6 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
                         PAGAR
                       </button>
                     </div>
-
                   </div>
                 ))
               ) : (
@@ -450,7 +499,6 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
               )}
             </div>
           </div>
-
         </div>
         {/* FIN PANEL IZQUIERDO */}
 
@@ -463,51 +511,74 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
               {/* CLIENTE */}
               <div className="details-section">
                 <button onClick={openClientModal} className="add-client-btn">
-                  {selectedItem.clienteSeleccionado ? 'Cambiar Cliente' : 'Agregar Cliente'}
+                  {selectedItem.clienteSeleccionado
+                    ? 'Cambiar Cliente'
+                    : 'Agregar Cliente'}
                 </button>
               </div>
 
               {selectedItem.clienteSeleccionado && (
                 <div className="client-info">
-                  <p><strong>Cliente:</strong> {selectedItem.clienteSeleccionado.nombreCompleto}</p>
-                  <p><strong>CI:</strong> {selectedItem.clienteSeleccionado.numeroCi}</p>
+                  <p>
+                    <strong>Cliente:</strong>{' '}
+                    {selectedItem.clienteSeleccionado.nombreCompleto}
+                  </p>
+                  <p>
+                    <strong>CI:</strong>{' '}
+                    {selectedItem.clienteSeleccionado.numeroCi}
+                  </p>
                 </div>
               )}
 
               {/* PRODUCTOS */}
               <div className="details-section product-section">
-                <button onClick={openProductModal} className="add-product-btn">
-                  Agregar Producto
-                </button>
+                <div className="product-buttons-group">
+                  <button
+                    onClick={() => setIsBarcodeModalOpen(true)}
+                    className="scan-barcode-btn"
+                  >
+                    📷 Escanear Código
+                  </button>
+                  <button onClick={openProductModal} className="add-product-btn">
+                    ➕ Agregar Manual
+                  </button>
+                </div>
 
                 <h4 className="products-list-title">Productos en la comanda</h4>
 
                 {selectedItem.productosEnComanda.length > 0 ? (
                   <ul className="products-list">
-                    {selectedItem.productosEnComanda.map(prod => (
+                    {selectedItem.productosEnComanda.map((prod) => (
                       <li key={prod.id} className="product-item">
-
                         <div className="product-info">
                           <span className="product-name">{prod.nombre}</span>
                           <span className="product-price-display">
                             Bs. {(prod.precio * prod.cantidad).toFixed(2)}
-                            <small>(Bs. {prod.precio.toFixed(2)} c/u)</small>
+                            <small>
+                              (Bs. {prod.precio.toFixed(2)} c/u)
+                            </small>
                           </span>
                         </div>
 
                         <div className="quantity-controls">
                           <button
                             className="quantity-btn"
-                            onClick={() => handleUpdateProductQuantity(prod.id, -1)}
+                            onClick={() =>
+                              handleUpdateProductQuantity(prod.id, -1)
+                            }
                           >
                             −
                           </button>
 
-                          <span className="product-quantity">{prod.cantidad}</span>
+                          <span className="product-quantity">
+                            {prod.cantidad}
+                          </span>
 
                           <button
                             className="quantity-btn"
-                            onClick={() => handleUpdateProductQuantity(prod.id, 1)}
+                            onClick={() =>
+                              handleUpdateProductQuantity(prod.id, 1)
+                            }
                           >
                             +
                           </button>
@@ -516,7 +587,9 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
                     ))}
                   </ul>
                 ) : (
-                  <p className="empty-products-msg">No hay productos aún.</p>
+                  <p className="empty-products-msg">
+                    No hay productos aún. Escanea o agrega manualmente.
+                  </p>
                 )}
 
                 <div className="total-amount-container">
@@ -527,7 +600,6 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
                 {selectedItem.productosEnComanda.length > 0 && (
                   <>
-                    {/* GUARDAR PENDIENTE SOLO PARA CANCHA */}
                     {isCanchaSelected && (
                       <button
                         onClick={handleSaveComandaPendiente}
@@ -547,7 +619,6 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
                   </>
                 )}
               </div>
-
             </div>
           ) : (
             <div className="no-selection-message">
@@ -556,7 +627,6 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
           )}
         </div>
         {/* FIN PANEL DERECHO */}
-
       </div>
 
       {/* MODALES */}
@@ -584,7 +654,6 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
           onClose={closePaymentModal}
         />
       )}
-
     </div>
   );
 };
