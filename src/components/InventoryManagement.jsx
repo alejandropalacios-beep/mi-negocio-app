@@ -73,6 +73,7 @@ function InventoryManagement() {
   const getFilteredProducts = (products, section, category, search) => {
      // Limpiamos el texto del buscador (minúsculas y sin espacios extra)
     const searchTerm = search.toLowerCase().trim();
+    
     return products.filter(product => {
     // Obtenemos los valores del producto de forma segura (si es null, usamos texto vacío)
       const pSection = (product.seccion || '').toLowerCase();
@@ -192,11 +193,12 @@ function InventoryManagement() {
               </select>
             </div>
 
-            <div className="filter-group search-group">
+           <div className="filter-group search-group">
               <label htmlFor="search-input"><FaSearch /> Buscar:</label>
               <input 
                 type="text" 
                 id="search-input"
+                // Aquí está la clave: value conectado directamente al estado
                 value={searchQuery}
                // Quitamos el debounce. Ahora se actualiza al instante.
                 onChange={(e) => setSearchQuery(e.target.value)} 
