@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteField } from 'firebase/firestore';
 
 function EditProductForm({ product, onEditComplete, onCancel }) {
   const [formData, setFormData] = useState({
@@ -9,6 +9,7 @@ function EditProductForm({ product, onEditComplete, onCancel }) {
     costoCompra: String(product.costoCompra),
     costoVenta: String(product.costoVenta),
     gananciaPorcentaje: String(product.gananciaPorcentaje),
+    codigoBarras: product.codigoBarras || '',
   });
   const [status, setStatus] = useState('');
   const [mensajeGanancia, setMensajeGanancia] = useState('');
@@ -20,6 +21,7 @@ function EditProductForm({ product, onEditComplete, onCancel }) {
       costoCompra: String(product.costoCompra),
       costoVenta: String(product.costoVenta),
       gananciaPorcentaje: String(product.gananciaPorcentaje),
+      codigoBarras: product.codigoBarras || '',
     });
   }, [product]);
 
@@ -115,6 +117,7 @@ function EditProductForm({ product, onEditComplete, onCancel }) {
         gananciaPorcentaje: formData.esInsumo ? 0 : (parseFloat(formData.gananciaPorcentaje) || 0),
         esInsumo: formData.esInsumo,
         proveedor: formData.proveedor,
+        codigoBarras: formData.codigoBarras.trim() || deleteField(),
       });
       setStatus('✅ Producto actualizado con éxito.');
       onEditComplete();
@@ -197,6 +200,10 @@ function EditProductForm({ product, onEditComplete, onCancel }) {
         <div>
           <label>Proveedor:</label>
           <input type="text" name="proveedor" value={formData.proveedor} onChange={handleChange} required />
+        </div>
+        <div>
+          <label>Código de barras:</label>
+          <input type="text" name="codigoBarras" value={formData.codigoBarras} onChange={handleChange} placeholder="Ej. 7501055300166" />
         </div>
         <div>
           <label>
