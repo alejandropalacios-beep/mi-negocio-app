@@ -411,3 +411,33 @@ hr {
     background-color: #adb5bd;
     cursor: not-allowed;
 }
+
+.save-with-discount-btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: 700;
+  margin-top: 10px;
+  transition: background-color 0.2s;
+  background-color: #fd7e14;
+  color: white;
+}
+
+.save-with-discount-btn:hover {
+  background-color: #e8690e;
+}
+
+.inventory-discharged-badge {
+  display: inline-block;
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.78em;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
