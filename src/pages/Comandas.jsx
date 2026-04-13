@@ -23,6 +23,7 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
   const [products, setProducts] = useState([]);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [descontarInventario, setDescontarInventario] = useState(false);
 
   const productsCollectionRef = collection(db, 'inventario');
   const comandasPagadasCollectionRef = collection(db, 'comandas_pagadas');
@@ -43,6 +44,11 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
     };
     fetchProducts();
   }, []);
+
+  // Sincroniza el switch de descuento con la comanda seleccionada
+  useEffect(() => {
+    setDescontarInventario(selectedItem?.inventarioDescargado || false);
+  }, [selectedComandaId]);
 
   const selectedItem = useMemo(() => {
     if (selectedComandaId == null) return null;
@@ -314,11 +320,6 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
   const handleSaveComandaWithInventoryDiscount = async () => {
     if (!selectedItem) return;
 
-    if (!isCanchaSelected) {
-      alert("Solo las canchas pueden guardarse como pendiente.");
-      return;
-    }
-
     if (!selectedItem.productosEnComanda.length) {
       alert("No hay productos para guardar.");
       return;
@@ -357,29 +358,42 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
         }
       });
 
-      const nuevaComandaAbierta = {
-        id:
-          openOrders.length > 0
-            ? Math.max(...openOrders.map(o => o.id)) + 1
-            : 1,
-        nombre: selectedItem.nombre,
-        productosEnComanda: [...selectedItem.productosEnComanda],
-        clienteSeleccionado: selectedItem.clienteSeleccionado || null,
-        tipo: "abierta",
-        inventarioDescargado: true,
-      };
+      if (isCanchaSelected) {
+        // Mueve cancha → lista de comandas abiertas
+        const nuevaComandaAbierta = {
+          id:
+            openOrders.length > 0
+              ? Math.max(...openOrders.map(o => o.id)) + 1
+              : 1,
+          nombre: selectedItem.nombre,
+          productosEnComanda: [...selectedItem.productosEnComanda],
+          clienteSeleccionado: selectedItem.clienteSeleccionado || null,
+          tipo: "abierta",
+          inventarioDescargado: true,
+        };
 
-      setOpenOrders(prev => [...prev, nuevaComandaAbierta]);
+        setOpenOrders(prev => [...prev, nuevaComandaAbierta]);
 
-      setCanchas(prev =>
-        prev.map(c =>
-          c.id === selectedComandaId
-            ? { ...c, productosEnComanda: [], clienteSeleccionado: null }
-            : c
-        )
-      );
+        setCanchas(prev =>
+          prev.map(c =>
+            c.id === selectedComandaId
+              ? { ...c, productosEnComanda: [], clienteSeleccionado: null }
+              : c
+          )
+        );
 
-      setSelectedComandaId(null);
+        setSelectedComandaId(null);
+      } else {
+        // Actualiza la comanda abierta en su lugar
+        setOpenOrders(prev =>
+          prev.map(o =>
+            o.id === selectedComandaId
+              ? { ...o, inventarioDescargado: true }
+              : o
+          )
+        );
+      }
+
       alert("✅ Comanda guardada y productos descontados del inventario.");
     } catch (err) {
       console.error('Error al descontar inventario:', err);
@@ -391,39 +405,37 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
   const handleSaveComandaPendiente = () => {
     if (!selectedItem) return;
 
-    if (!isCanchaSelected) {
-      alert("Solo las canchas pueden guardarse como pendiente.");
-      return;
-    }
-
     if (!selectedItem.productosEnComanda.length) {
       alert("No hay productos para guardar.");
       return;
     }
 
-    const nuevaComandaAbierta = {
-      id:
-        openOrders.length > 0
-          ? Math.max(...openOrders.map(o => o.id)) + 1
-          : 1,
-      nombre: selectedItem.nombre,
-      productosEnComanda: [...selectedItem.productosEnComanda],
-      clienteSeleccionado: selectedItem.clienteSeleccionado || null,
-      tipo: "abierta",
-    };
+    if (isCanchaSelected) {
+      const nuevaComandaAbierta = {
+        id:
+          openOrders.length > 0
+            ? Math.max(...openOrders.map(o => o.id)) + 1
+            : 1,
+        nombre: selectedItem.nombre,
+        productosEnComanda: [...selectedItem.productosEnComanda],
+        clienteSeleccionado: selectedItem.clienteSeleccionado || null,
+        tipo: "abierta",
+      };
 
-    setOpenOrders(prev => [...prev, nuevaComandaAbierta]);
+      setOpenOrders(prev => [...prev, nuevaComandaAbierta]);
 
-    // Limpia la cancha original
-    setCanchas(prev =>
-      prev.map(c =>
-        c.id === selectedComandaId
-          ? { ...c, productosEnComanda: [], clienteSeleccionado: null }
-          : c
-      )
-    );
+      // Limpia la cancha original
+      setCanchas(prev =>
+        prev.map(c =>
+          c.id === selectedComandaId
+            ? { ...c, productosEnComanda: [], clienteSeleccionado: null }
+            : c
+        )
+      );
 
-    setSelectedComandaId(null);
+      setSelectedComandaId(null);
+    }
+
     alert("✅ Comanda guardada como pendiente.");
   };
 
@@ -608,22 +620,43 @@ const Comandas = ({ canchas, setCanchas, openOrders, setOpenOrders }) => {
 
                 {selectedItem.productosEnComanda.length > 0 && (
                   <>
-                    {/* GUARDAR PENDIENTE SOLO PARA CANCHA */}
+                    {/* SWITCH DESCUENTO DE INVENTARIO - visible para todos los tipos */}
+                    <div className="inventory-switch-container">
+                      <label className="inventory-switch-label">
+                        <span className="inventory-switch-text">🏷️ Descontar del inventario</span>
+                        <div className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={descontarInventario}
+                            onChange={(e) => setDescontarInventario(e.target.checked)}
+                            disabled={!!selectedItem.inventarioDescargado}
+                          />
+                          <span className="toggle-slider"></span>
+                        </div>
+                      </label>
+                      {selectedItem.inventarioDescargado && (
+                        <small className="switch-info-text">✅ Inventario ya descontado en esta comanda</small>
+                      )}
+                    </div>
+
+                    {/* BOTÓN GUARDAR - para canchas */}
                     {isCanchaSelected && (
-                      <>
-                        <button
-                          onClick={handleSaveComandaPendiente}
-                          className="save-btn"
-                        >
-                          Guardar Comanda Pendiente
-                        </button>
-                        <button
-                          onClick={handleSaveComandaWithInventoryDiscount}
-                          className="save-with-discount-btn"
-                        >
-                          💾 Guardar Comanda con Descuento
-                        </button>
-                      </>
+                      <button
+                        onClick={descontarInventario ? handleSaveComandaWithInventoryDiscount : handleSaveComandaPendiente}
+                        className={descontarInventario ? "save-with-discount-btn" : "save-btn"}
+                      >
+                        {descontarInventario ? "💾 Guardar con Descuento" : "Guardar Comanda Pendiente"}
+                      </button>
+                    )}
+
+                    {/* BOTÓN APLICAR DESCUENTO - para comandas abiertas (no canchas) */}
+                    {!isCanchaSelected && descontarInventario && !selectedItem.inventarioDescargado && (
+                      <button
+                        onClick={handleSaveComandaWithInventoryDiscount}
+                        className="save-with-discount-btn"
+                      >
+                        💾 Aplicar Descuento al Inventario
+                      </button>
                     )}
 
                     <button

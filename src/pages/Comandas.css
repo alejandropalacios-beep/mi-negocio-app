@@ -441,3 +441,88 @@ hr {
   font-weight: 600;
   margin-bottom: 5px;
 }
+
+/* ======================================================= */
+/* Toggle Switch de Descuento de Inventario                */
+/* ======================================================= */
+
+.inventory-switch-container {
+  margin-top: 15px;
+  padding: 12px 15px;
+  background-color: #fff8f0;
+  border: 1px solid #ffd6a5;
+  border-radius: 6px;
+}
+
+.inventory-switch-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  gap: 10px;
+}
+
+.inventory-switch-text {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.switch-info-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.82em;
+  color: #155724;
+  font-style: italic;
+}
+
+/* Pill toggle switch */
+.toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background-color: #ccc;
+  border-radius: 26px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #fd7e14;
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  background-color: #28a745;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.toggle-switch input:checked + .toggle-slider::before,
+.toggle-switch input:disabled + .toggle-slider::before {
+  transform: translateX(24px);
+}
