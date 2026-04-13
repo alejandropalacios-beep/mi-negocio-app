@@ -392,3 +392,117 @@ body {
     margin: calc(2 * var(--space-unit)) auto;
   }
 }
+/* ======================================================= */
+/* Toggle Switch de Descuento de Inventario                */
+/* ======================================================= */
+
+.inventory-discharged-badge {
+  display: inline-block;
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.78em;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.inventory-switch-container {
+  margin-top: 15px;
+  padding: 12px 15px;
+  background-color: #fff8f0;
+  border: 1px solid #ffd6a5;
+  border-radius: 6px;
+}
+
+.inventory-switch-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  gap: 10px;
+}
+
+.inventory-switch-text {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.switch-info-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.82em;
+  color: #155724;
+  font-style: italic;
+}
+
+.save-with-discount-btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: 700;
+  margin-top: 10px;
+  transition: background-color 0.2s;
+  background-color: #fd7e14;
+  color: white;
+}
+
+.save-with-discount-btn:hover {
+  background-color: #e8690e;
+}
+
+/* Pill toggle switch */
+.toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background-color: #ccc;
+  border-radius: 26px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #fd7e14;
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  background-color: #28a745;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.toggle-switch input:checked + .toggle-slider::before,
+.toggle-switch input:disabled + .toggle-slider::before {
+  transform: translateX(24px);
+}
