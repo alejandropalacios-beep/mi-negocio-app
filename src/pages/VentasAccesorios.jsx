@@ -39,6 +39,7 @@ function VentaAccesorios({ canchas, setCanchas, openVentas, setOpenVentas }) {
   // Estados locales
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [isCanchaSelected, setIsCanchaSelected] = useState(true);
+  const [descontarInventario, setDescontarInventario] = useState(false);
 
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -85,6 +86,11 @@ function VentaAccesorios({ canchas, setCanchas, openVentas, setOpenVentas }) {
     setIsCanchaSelected(isCancha);
   }, []);
 
+  // Sincroniza el switch de descuento con la venta seleccionada
+  useEffect(() => {
+    setDescontarInventario(selectedItem?.inventarioDescargado || false);
+  }, [selectedItemId]);
+
   // Crear venta pendiente desde cancha
   const handleSaveVentaPendiente = useCallback(() => {
     if (!selectedItem) return;
@@ -110,11 +116,85 @@ function VentaAccesorios({ canchas, setCanchas, openVentas, setOpenVentas }) {
           : c
       ));
       setSelectedItemId(null);
-      alert("✅ Venta guardada como pendiente.");
-    } else {
-      alert("La venta ya está en pendientes.");
     }
+
+    alert("✅ Venta guardada como pendiente.");
   }, [selectedItem, isCanchaSelected, openVentas, canchas, selectedItemId, setOpenVentas, setCanchas]);
+
+  // 💾 GUARDAR VENTA CON DESCUENTO DE INVENTARIO
+  const handleSaveVentaWithInventoryDiscount = useCallback(async () => {
+    if (!selectedItem) return;
+    if (!selectedItem.productosEnVenta || selectedItem.productosEnVenta.length === 0) {
+      alert("No hay accesorios para guardar.");
+      return;
+    }
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const stockChecks = await Promise.all(
+          selectedItem.productosEnVenta.map(async (prod) => {
+            const inventarioRef = doc(db, 'inventario', prod.id);
+            const inventarioSnap = await tx.get(inventarioRef);
+            return { prod, inventarioRef, inventarioSnap };
+          })
+        );
+
+        const stockErrors = [];
+        for (const { prod, inventarioSnap } of stockChecks) {
+          if (!inventarioSnap.exists()) {
+            stockErrors.push(`El producto "${prod.nombre}" no existe en el inventario.`);
+            continue;
+          }
+          const stockActual = inventarioSnap.data().cantidad || 0;
+          if (stockActual < prod.cantidad) {
+            stockErrors.push(`Stock insuficiente para "${prod.nombre}". Disponible: ${stockActual}, Requerido: ${prod.cantidad}`);
+          }
+        }
+
+        if (stockErrors.length > 0) {
+          throw new Error(stockErrors.join('\n'));
+        }
+
+        for (const { inventarioRef, inventarioSnap, prod } of stockChecks) {
+          if (!inventarioSnap.exists()) continue;
+          const stockActual = inventarioSnap.data().cantidad || 0;
+          tx.update(inventarioRef, { cantidad: stockActual - prod.cantidad });
+        }
+      });
+
+      if (isCanchaSelected) {
+        const newId = openVentas.length > 0 ? Math.max(...openVentas.map(v => v.id)) + 1 : 1;
+        const nuevaVentaPendiente = {
+          id: newId,
+          nombre: `Venta #${newId}`,
+          productosEnVenta: [...selectedItem.productosEnVenta],
+          clienteSeleccionado: selectedItem.clienteSeleccionado,
+          tipo: 'pendiente',
+          inventarioDescargado: true,
+        };
+        setOpenVentas(prev => [...prev, nuevaVentaPendiente]);
+        setCanchas(prev => prev.map(c =>
+          c.id === selectedItemId
+            ? { ...c, productosEnVenta: [], clienteSeleccionado: null }
+            : c
+        ));
+        setSelectedItemId(null);
+      } else {
+        setOpenVentas(prev =>
+          prev.map(v =>
+            v.id === selectedItemId
+            ? { ...v, inventarioDescargado: true }
+            : v
+          )
+        );
+      }
+
+      alert("✅ Venta guardada y productos descontados del inventario.");
+    } catch (err) {
+      console.error('Error al descontar inventario:', err);
+      alert(`❌ Error al descontar inventario:\n${err.message}`);
+    }
+  }, [selectedItem, isCanchaSelected, openVentas, selectedItemId, setOpenVentas, setCanchas]);
 
   // Manejo cliente, producto (Sin cambios importantes, usan los setters de props)
   const openClientModal = useCallback(() => {
@@ -405,7 +485,42 @@ function VentaAccesorios({ canchas, setCanchas, openVentas, setOpenVentas }) {
                 </div>
                 {selectedItem.productosEnVenta && selectedItem.productosEnVenta.length > 0 && (
                   <>
-                    <button onClick={handleSaveVentaPendiente} className="save-btn">Guardar Venta Pendiente</button>
+                    <div className="inventory-switch-container">
+                      <label className="inventory-switch-label">
+                        <span className="inventory-switch-text">🏷️ Descontar del inventario</span>
+                        <div className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={descontarInventario}
+                            onChange={(e) => setDescontarInventario(e.target.checked)}
+                            disabled={!!selectedItem.inventarioDescargado}
+                          />
+                          <span className="toggle-slider"></span>
+                        </div>
+                      </label>
+                      {selectedItem.inventarioDescargado && (
+                        <small className="switch-info-text">✅ Inventario ya descontado en esta venta</small>
+                      )}
+                    </div>
+
+                    {isCanchaSelected && (
+                      <button
+                        onClick={descontarInventario ? handleSaveVentaWithInventoryDiscount : handleSaveVentaPendiente}
+                        className={descontarInventario ? "save-with-discount-btn" : "save-btn"}
+                      >
+                        {descontarInventario ? "💾 Guardar con Descuento" : "Guardar Venta Pendiente"}
+                      </button>
+                    )}
+
+                    {!isCanchaSelected && descontarInventario && !selectedItem.inventarioDescargado && (
+                      <button
+                        onClick={handleSaveVentaWithInventoryDiscount}
+                        className="save-with-discount-btn"
+                      >
+                        💾 Aplicar Descuento al Inventario
+                      </button>
+                    )}
+
                     <button onClick={openPaymentModal} className="pay-btn">Pagar Venta</button>
                   </>
                 )}
@@ -427,7 +542,7 @@ function VentaAccesorios({ canchas, setCanchas, openVentas, setOpenVentas }) {
                 className={`order-card ${selectedItemId === item.id ? 'active-card' : ''}`}
                 onClick={() => handleSelectItem(item.id, item.tipo === 'cancha')} // Añadir onClick a la tarjeta
             >
-              <div className="card-header"><h4>{item.nombre}</h4></div>
+              <div className="card-header"><h4>{item.nombre}</h4>{item.inventarioDescargado && <span className="inventory-discharged-badge">✅ Inventario descontado</span>}</div>
               <div className="card-body">
                 {item.clienteSeleccionado && <p>Cliente: {item.clienteSeleccionado.nombreCompleto}</p>}
                 {item.productosEnVenta.slice(0,3).map(p => <p key={p.id}>{p.nombre} x {p.cantidad}</p>)}
