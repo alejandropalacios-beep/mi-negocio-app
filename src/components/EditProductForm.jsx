@@ -136,10 +136,10 @@ function EditProductForm({ product, onEditComplete, onCancel }) {
           <label>Código:</label>
           <input type="text" name="codigo" value={formData.codigo} readOnly style={{ backgroundColor: '#f0f0f0' }} />
         </div>
-        <div>
+       <div>
           <label>Cantidad:</label>
-          {/* El campo de cantidad es de solo lectura (readOnly) para evitar la edición manual */}
-          <input type="text" name="cantidad" value={formData.cantidad} readOnly style={{ backgroundColor: '#f0f0f0' }} />
+          {/* ✅ ACTUALIZADO: Campo de cantidad ahora es editable */}
+          <input type="text" name="cantidad" value={formData.cantidad} onChange={handleChange} required />
         </div>
         <div>
           <label>Unidad:</label>
